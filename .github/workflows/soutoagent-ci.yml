@@ -37,7 +37,7 @@ jobs:
         run: cargo test --workspace --exclude autoagents-burn --exclude autoagents-mistral-rs --exclude wasm_agent
 
   soutoagent-smoke:
-    if: ${{ secrets.OPENAI_API_KEY != '' }}
+    if: false # temporarily disabled until OpenAI secret is configured
     runs-on: ubuntu-latest
     needs: lint-test
     env:
