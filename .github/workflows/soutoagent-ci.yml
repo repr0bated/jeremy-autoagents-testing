@@ -5,6 +5,7 @@ on:
     branches: [ feature/soutoagent-testing ]
   pull_request:
     branches: [ feature/soutoagent-testing ]
+  workflow_dispatch:
 
 jobs:
   lint-test:
