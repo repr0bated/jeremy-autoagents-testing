@@ -94,7 +94,10 @@ Produce a batch-wise migration plan that:
         .run(Task::new(task_prompt.trim()))
         .await?;
 
-    println!("SoutoAgent result:\n{}", serde_json::to_string_pretty(&result.json_value())?);
+    println!(
+        "SoutoAgent result:\n{}",
+        serde_json::to_string_pretty(&result.json_value())?
+    );
     Ok(())
 }
 
@@ -146,7 +149,10 @@ impl ToolRuntime for PackageKitKnowledgeBase {
     }
 }
 
-fn lookup_package_id(map_path: &str, package: &str) -> Result<(Option<String>, Vec<String>), ToolCallError> {
+fn lookup_package_id(
+    map_path: &str,
+    package: &str,
+) -> Result<(Option<String>, Vec<String>), ToolCallError> {
     let mut missing = Vec::new();
     match fs::read_to_string(map_path) {
         Ok(content) => {
@@ -173,7 +179,10 @@ fn lookup_package_id(map_path: &str, package: &str) -> Result<(Option<String>, V
     }
 }
 
-fn lookup_package_summary(details_path: &str, package_id: &str) -> Result<Option<String>, ToolCallError> {
+fn lookup_package_summary(
+    details_path: &str,
+    package_id: &str,
+) -> Result<Option<String>, ToolCallError> {
     match fs::read_to_string(details_path) {
         Ok(content) => {
             for line in content.lines() {
@@ -198,9 +207,9 @@ fn lookup_package_summary(details_path: &str, package_id: &str) -> Result<Option
 
 #[derive(Debug, Serialize, Deserialize, AgentOutput)]
 pub struct SoutoAgentOutput {
-    #[output(description = "Narrative response from the agent")] 
+    #[output(description = "Narrative response from the agent")]
     response: String,
-    #[output(description = "Optional structured action plan" )]
+    #[output(description = "Optional structured action plan")]
     action_plan: Option<Value>,
 }
 
