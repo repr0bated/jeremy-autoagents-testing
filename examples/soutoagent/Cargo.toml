@@ -7,6 +7,7 @@ publish = false
 [dependencies]
 autoagents = { workspace = true, features = ["openai"] }
 autoagents-derive.workspace = true
+autoagents-test-utils.workspace = true
 async-trait.workspace = true
 clap.workspace = true
 serde.workspace = true
