@@ -121,9 +121,7 @@ impl McpToolsManager {
         server_config: &McpServerConfig,
     ) -> Result<McpServerConnection, McpError> {
         // Validate configuration
-        server_config
-            .validate()
-            .map_err(|e| McpError::ConfigError(e))?;
+        server_config.validate().map_err(McpError::ConfigError)?;
 
         let service = match server_config.protocol.as_str() {
             "stdio" => self.connect_stdio_server(server_config).await?,
