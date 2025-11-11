@@ -34,6 +34,12 @@ pub struct BraveSearch {
     api_key: String,
 }
 
+impl Default for BraveSearch {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BraveSearch {
     pub fn new() -> Self {
         Self {
