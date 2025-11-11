@@ -9,12 +9,11 @@ use autoagents::{
         AgentBuilder, AgentOutputT, DirectAgent,
     },
     core::error::Error,
-    core::tool::{ToolCallError, ToolInputT, ToolRuntime, ToolT},
+    core::tool::{ToolCallError, ToolInputT, ToolRuntime},
     init_logging,
-    llm::{backends::openai::OpenAI, builder::LLMBuilder, LLMProvider},
+    llm::{backends::openai::OpenAI, builder::LLMBuilder},
 };
 use autoagents_derive::{agent, tool, AgentHooks, AgentOutput, ToolInput};
-use autoagents_test_utils::llm::MockLLMProvider;
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -40,10 +39,6 @@ struct Args {
     /// Optional override for the OpenAI model name.
     #[arg(long, default_value = "gpt-4o")]
     model: String,
-
-    /// Use the mock LLM provider for offline testing.
-    #[arg(long, default_value_t = false)]
-    mock_llm: bool,
 }
 
 #[tokio::main]
@@ -51,25 +46,19 @@ async fn main() -> Result<(), Error> {
     init_logging();
     let args = Args::parse();
 
+    let api_key = env::var("OPENAI_API_KEY")
+        .map_err(|_| Error::CustomError("OPENAI_API_KEY must be set for SoutoAgent".into()))?;
+
     env::set_var("PK_KNOWN_MAP", &args.pk_map);
     env::set_var("PK_KNOWN_DETAILS", &args.pk_details);
 
-    let llm: Arc<dyn LLMProvider> = if args.mock_llm {
-        Arc::new(MockLLMProvider)
-    } else {
-        let api_key = env::var("OPENAI_API_KEY")
-            .map_err(|_| Error::CustomError("OPENAI_API_KEY must be set for SoutoAgent".into()))?;
-
-        let provider: Arc<OpenAI> = LLMBuilder::<OpenAI>::new()
-            .api_key(api_key)
-            .model(&args.model)
-            .max_tokens(1024)
-            .temperature(0.1)
-            .build()
-            .expect("Failed to configure LLM");
-
-        provider as Arc<dyn LLMProvider>
-    };
+    let llm: Arc<OpenAI> = LLMBuilder::<OpenAI>::new()
+        .api_key(api_key)
+        .model(&args.model)
+        .max_tokens(1024)
+        .temperature(0.1)
+        .build()
+        .expect("Failed to configure LLM");
 
     let sliding_window_memory = Box::new(SlidingWindowMemory::new(20));
 
@@ -81,7 +70,8 @@ async fn main() -> Result<(), Error> {
         .await?;
 
     let task_prompt = format!(
-        r#"Context: You are coordinating the proxmod-to-PackageKit migration.
+        """
+Context: You are coordinating the proxmod-to-PackageKit migration.
 Reference data comes from pk-known-start.sh outputs located at:
 - map: {map}
 - details: {details}
@@ -92,7 +82,8 @@ Produce a batch-wise migration plan that:
 1. Confirms whether each dpkg name is resolvable via PackageKit.
 2. Notes the PackageKit package-id + summary when available.
 3. Suggests next DBus transactions (Resolve, GetDetails, InstallPackages) required to move control from proxmod to PackageKit.
-4. Calls the PackageKitKnowledgeBase tool whenever you need canonical IDs."#,
+4. Calls the PackageKitKnowledgeBase tool whenever you need canonical IDs.
+""",
         map = args.pk_map,
         details = args.pk_details,
         task = args.task
@@ -103,13 +94,7 @@ Produce a batch-wise migration plan that:
         .run(Task::new(task_prompt.trim()))
         .await?;
 
-    match serde_json::to_string_pretty(&result) {
-        Ok(rendered) => println!("SoutoAgent result:\n{}", rendered),
-        Err(err) => {
-            println!("SoutoAgent result (raw debug): {:?}", result);
-            eprintln!("Failed to pretty print result: {}", err);
-        }
-    }
+    println!("SoutoAgent result:\n{}", serde_json::to_string_pretty(&result.json_value())?);
     Ok(())
 }
 
@@ -117,20 +102,10 @@ Produce a batch-wise migration plan that:
 pub struct PackageLookupInput {
     #[input(description = "dpkg package name managed by proxmod")]
     package_name: String,
-    #[serde(default = "default_map_path")]
-    #[input(description = "Path to pk-known.map.tsv")]
-    map_path: String,
-    #[serde(default = "default_details_path")]
-    #[input(description = "Path to pk-known.details.tsv")]
-    details_path: String,
-}
-
-fn default_map_path() -> String {
-    env::var("PK_KNOWN_MAP").unwrap_or_else(|_| "/root/pk-known/pk-known.map.tsv".into())
-}
-
-fn default_details_path() -> String {
-    env::var("PK_KNOWN_DETAILS").unwrap_or_else(|_| "/root/pk-known/pk-known.details.tsv".into())
+    #[input(description = "Optional override for the pk-known.map.tsv path")]
+    map_path: Option<String>,
+    #[input(description = "Optional override for the pk-known.details.tsv path")]
+    details_path: Option<String>,
 }
 
 #[tool(
@@ -144,8 +119,14 @@ pub struct PackageKitKnowledgeBase;
 impl ToolRuntime for PackageKitKnowledgeBase {
     async fn execute(&self, args: Value) -> Result<Value, ToolCallError> {
         let input: PackageLookupInput = serde_json::from_value(args)?;
-        let map_path = input.map_path;
-        let details_path = input.details_path;
+        let map_path = input
+            .map_path
+            .or_else(|| env::var("PK_KNOWN_MAP").ok())
+            .unwrap_or_else(|| "/root/pk-known/pk-known.map.tsv".into());
+        let details_path = input
+            .details_path
+            .or_else(|| env::var("PK_KNOWN_DETAILS").ok())
+            .unwrap_or_else(|| "/root/pk-known/pk-known.details.tsv".into());
 
         let (package_id, missing_artifacts) = lookup_package_id(&map_path, &input.package_name)?;
         let summary = if let Some(id) = &package_id {
@@ -219,8 +200,8 @@ fn lookup_package_summary(details_path: &str, package_id: &str) -> Result<Option
 pub struct SoutoAgentOutput {
     #[output(description = "Narrative response from the agent")] 
     response: String,
-    #[output(description = "Optional structured action plan")]
-    action_plan: Option<String>,
+    #[output(description = "Optional structured action plan" )]
+    action_plan: Option<Value>,
 }
 
 impl From<ReActAgentOutput> for SoutoAgentOutput {
