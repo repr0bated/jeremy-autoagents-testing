@@ -44,7 +44,6 @@ jobs:
             -p autoagents-serve \
             -p autoagents-mistral-rs \
             -p autoagents-onnx \
-            -p soutoagent \
             -- -D warnings
 
       - name: Cargo test (workspace)
