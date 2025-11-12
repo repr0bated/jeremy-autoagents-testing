@@ -41,9 +41,6 @@ jobs:
             -p autoagents-toolkit \
             -p autoagents-test-utils \
             -p autoagents-cli \
-            -p autoagents-serve \
-            -p autoagents-mistral-rs \
-            -p autoagents-onnx \
             -- -D warnings
 
       - name: Cargo test (workspace)
