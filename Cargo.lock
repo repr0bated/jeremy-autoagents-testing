@@ -8487,6 +8487,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "soutoagent"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "autoagents",
+ "autoagents-derive",
+ "clap",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "sparsevec"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

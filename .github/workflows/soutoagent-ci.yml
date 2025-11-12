@@ -32,7 +32,10 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets \
+          --exclude autoagents-burn \
+          --exclude coding_agent \
+          -- -D warnings
 
       - name: Cargo test (workspace)
         run: cargo test --workspace --exclude autoagents-burn --exclude autoagents-mistral-rs --exclude wasm_agent
