@@ -11,6 +11,8 @@ Before using AutoAgents, ensure you have:
 - **Rust 1.70 or later** - Install using [rustup](https://rustup.rs/)
 - **Cargo** package manager (comes with Rust)
 
+> **Note:** Some optional crates in this workspace (notably the Burn-based tooling and GPU-oriented examples) currently depend on upstream libraries that are already using Rust 2024 edition features. To run the complete CI suite or work on those components you need a **nightly toolchain** in addition to stable. Install it with `rustup toolchain install nightly` and invoke commands as `cargo +nightly …` when required.
+
 Verify your installation:
 ```bash
 rustc --version

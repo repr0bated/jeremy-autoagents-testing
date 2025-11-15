@@ -19,7 +19,7 @@ clap = { workspace = true }
 async-trait = { workspace = true }
 urlencoding = "2.1.3"
 reqwest.workspace = true
-ureq = { version = "3.0.8", features = ["json"] }
+ureq.workspace = true
 uuid = { workspace = true }
 tokio-stream.workspace = true
 colored = "3.0.0"
