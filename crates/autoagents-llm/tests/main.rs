@@ -312,6 +312,7 @@ mod common_tests {
 mod feature_tests {
     #[test]
     #[cfg(feature = "full")]
+    #[allow(clippy::assertions_on_constants)]
     fn test_full_feature_enables_all_backends() {
         assert!(cfg!(feature = "openai"));
         assert!(cfg!(feature = "anthropic"));

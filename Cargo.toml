@@ -49,7 +49,7 @@ futures-util = "0.3.31"
 proc-macro2 = "1.0.93"
 quote = "1.0.38"
 clap = { version = "4.5.31", features = ["derive"] }
-ureq = { version = "3.0.8", features = ["json"] }
+ureq = { version = "3.0.8", default-features = false, features = ["json", "gzip", "rustls"] }
 uuid = { version = "1.15.1", features = ["v4"] }
 log = "0.4"
 env_logger = { version = "0.11" }
